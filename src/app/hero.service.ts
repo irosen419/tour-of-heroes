@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs'
 import { Hero } from './hero';
-import { HEROES } from './mock-heroes';
 import { MessageService } from './message.service'
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map, tap } from 'rxjs/operators';
@@ -12,6 +11,10 @@ import { catchError, map, tap } from 'rxjs/operators';
 export class HeroService {
 
   private heroesUrl = 'api/heroes'; // URL to web api
+
+  httpOptions = {
+    headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+  }
 
   constructor(
     private http: HttpClient,
@@ -41,9 +44,20 @@ export class HeroService {
     )
   }
 
-  httpOptions = {
-    headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+  /* GET heroes whose name contains search term */
+  searchHeroes(term: string): Observable<Hero[]> {
+    // if not search term, return empty hero array.
+    if (!term.trim()) {
+      return of([])
+    }
+    return this.http.get<Hero[]>(`${this.heroesUrl}/?name=${term}`).pipe(
+      tap(x => x.length ?
+        this.log(`found heroes matching "${term}"`) :
+        this.log(`no heroes matching "${term}"`)),
+      catchError(this.handleError<Hero[]>('searchHeroes', []))
+    )
   }
+
   /** PUT: update the hero on the server */
   updateHero(hero: any): Observable<any> {
     return this.http.put(this.heroesUrl, hero, this.httpOptions).pipe(
